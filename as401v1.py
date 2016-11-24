@@ -1,5 +1,7 @@
 #Accounting application
 
+from decimal import *
+
 print ""
 print "wlecome to AS401"
 print "the premier accounting softwre for businesses."
@@ -9,6 +11,8 @@ running = True
 #global variables
 chart_of_accounts = []
 gl = []
+je_list = []
+aje_count = 1
 
 class TBAccount(object):
     """Class for individual TB Accounts
@@ -43,11 +47,12 @@ class JournalPiece(object):
     Integer value = entry value
     Boolean debit = true if debit, false if credit"""
 
-    def __init__(self, acct, value, debit):
+    def __init__(self, acct, value, debit, je_num):
         super(JournalPiece, self).__init__()
         self.acct = acct
-        self.value = value
+        self.value = int(value)
         self.debit = debit
+        self.je_num = je_num
 
     def get_acct(self):
         return self.acct
@@ -57,6 +62,15 @@ class JournalPiece(object):
 
     def is_debit(self):
         return self.debit
+
+    def get_je_num(self):
+        return self.je_num
+
+    def __repr__(self):
+        if self.debit == True:
+            return "Dr " + self.acct + " " + str(self.value)
+        else:
+            return "Cr " + self.acct + " " + str(self.value)
 
 class JournalEntry(object):
     """Class for full J/E
@@ -81,31 +95,118 @@ class JournalEntry(object):
 
     def is_balanced(self):
         '''Test to see if debits = credits'''
-        debits = 0
-        credits = 0
+        self.debits = 0
+        self.credits = 0
         for piece in self.pieces:
-            if piece.is_debit:
-                debits += piece.get_value
+            if piece.is_debit():
+                self.debits += piece.get_value()
             else:
-                credits += piece.get_value
-        return debits == credits
+                self.credits += piece.get_value()
+                
+        return self.debits == self.credits
 
     def __str__(self):
         out = str(self.number)
 
+def create_aje():
+    """Make an AJE"""
+    global gl
+    global aje_count
+    global je_list
+
+    aje_lines_list = []
+
+    print "Journal Entry #" + str(aje_count)
+    input_description = raw_input("Enter J/E description: ")
+
+    aje_lines = 1
+    aje_lines_loop = True
+    while aje_lines_loop:
+        print ""
+        print "JE Line " + str(aje_lines) + ":"
+
+        input_acct = raw_input("Enter account: ")
+        input_value = raw_input("Enter amount: ")
+
+        debit_loop = True
+        while debit_loop:
+            input_sign = raw_input("Debit or Credit? (D/C): ")
+            if input_sign in ['D','d']:
+                input_sign = 'Dr'
+                debit_loop = False
+            elif input_sign in ['C','c']:
+                input_sign = 'Cr'
+                debit_loop = False
+
+        #confirmation of JE line
+        confirm = False
+        while not confirm:
+            for line in aje_lines_list:
+                print "* " + str(line)
+            print(str(aje_lines) + " " + input_sign + " " + input_acct + " " + input_value)
+            input_confirm = raw_input("Is this line correct?(Y/N): ")
+
+            if input_confirm == 'Y' or input_confirm == 'y':
+
+                #prep debit/credit sign
+                if input_sign == 'Dr':
+                    input_debit = True
+                else:
+                    input_debit = False
+
+                journal_piece = JournalPiece(input_acct, input_value, input_debit, aje_count)
+                aje_lines_list.append(journal_piece)
+                aje_lines += 1
+
+                confirm = True
+
+            elif input_confirm == 'N' or input_confirm == 'n':
+                confirm = True
+
+        final_loop = True
+        while final_loop:
+            input_final = raw_input("Is this journal entry complete?(Y/N/eXit) ")
+
+            if input_final == 'Y' or input_final == 'y':
+                new_je = JournalEntry(aje_count, input_description, aje_lines_list)
+                if new_je.is_balanced():
+                    for entry in new_je.get_pieces():
+                        gl.append(entry)
+                    je_list.append(new_je)
+                    print "JE entered."
+                    aje_count += 1
+                    final_loop = False
+                    aje_lines_loop = False
+
+                else:
+                    print "JE not in balance."
+
+                    for entry in new_je.get_pieces():
+                        print entry
+                    final_loop = False
+
+            elif input_final == 'N' or input_final == 'n':
+                final_loop = False
+
+            elif input_final == 'X' or input_final == 'x':
+                final_loop = False
+                aje_lines_loop = False
 
 def aje_module():
     aje_running = True
 
     while aje_running:
-        print ""
-        print "lOL ajes"
-        print ""
+        print "1) Enter J/E"
+        print "2) View J/E"
+        print "X) Exit\n"
 
         user_input = raw_input("Enter Command: ")
 
         if user_input == "X":
             aje_running = False
+
+        elif user_input == "1":
+            create_aje()
 
 def create_account():
     """Add an account to the TB"""
@@ -220,7 +321,7 @@ def delete_account():
         if affirm == 'Y' or affirm == 'y':
             chart_of_accounts.remove(to_delete)
 
-def Chart_module():
+def chart_module():
     global chart_of_accounts
     chart_running = True
 
@@ -274,7 +375,7 @@ def Main():
     elif user_input == '1':
         aje_module()
     elif user_input == '3':
-        Chart_module()
+        chart_module()
 
 while running:
 
