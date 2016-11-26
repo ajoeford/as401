@@ -50,7 +50,7 @@ class JournalPiece(object):
     def __init__(self, acct, value, debit, je_num):
         super(JournalPiece, self).__init__()
         self.acct = acct
-        self.value = int(value)
+        self.value = Decimal(value)
         self.debit = debit
         self.je_num = je_num
 
@@ -95,18 +95,100 @@ class JournalEntry(object):
 
     def is_balanced(self):
         '''Test to see if debits = credits'''
-        self.debits = 0
-        self.credits = 0
+        self.debits = Decimal(0)
+        self.credits = Decimal(0)
         for piece in self.pieces:
             if piece.is_debit():
                 self.debits += piece.get_value()
             else:
                 self.credits += piece.get_value()
-                
+
         return self.debits == self.credits
 
     def __str__(self):
         out = str(self.number)
+
+def je_line_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value):
+    """Loop for JE lines"""
+    """parameters:
+    List aje_lines_list
+    Int aje_lines
+    String input_sign
+    String input_acct
+    Decimal input_value
+
+    returns: A tuple of updated aje_lines_list and aje_lines
+    """
+
+    looped = True
+    while looped:
+        for line in aje_lines_list:
+            print "* " + str(line)
+        print(str(aje_lines) + " " + input_sign + " " + input_acct + " " + input_value)
+        print ""
+        input_confirm = raw_input("Is this line correct?(Y/N): ")
+
+        if input_confirm == 'Y' or input_confirm == 'y':
+
+            #prep debit/credit sign
+            if input_sign == 'Dr':
+                input_debit = True
+            else:
+                input_debit = False
+
+            #create JE piece and add to list
+            journal_piece = JournalPiece(input_acct, input_value, input_debit, aje_count)
+            aje_lines_list.append(journal_piece)
+            aje_lines += 1
+
+            return (aje_lines_list, aje_lines)
+
+        elif input_confirm == 'N' or input_confirm == 'n':
+            return (aje_lines_list, aje_lines)
+
+def confirm_je_loop(aje_count, input_description, aje_lines_list):
+    """
+    parameters:
+    Int aje_count
+    String input_description
+    JournalPiece[] aje_lines_list
+
+    returns: Tuple of updated aje_count and aje_lines_loop.
+    """
+    global je_list
+    global gl
+    aje_lines_loop = True
+
+    final_loop = True
+    while final_loop:
+        input_final = raw_input("Is this journal entry complete?(Y/N/eXit) ")
+
+        if input_final == 'Y' or input_final == 'y':
+            new_je = JournalEntry(aje_count, input_description, aje_lines_list)
+            if new_je.is_balanced():
+                for entry in new_je.get_pieces():
+                    gl.append(entry)
+                je_list.append(new_je)
+                print "JE entered."
+                aje_count += 1
+                final_loop = False
+                aje_lines_loop = False
+
+            else:
+                print "JE not in balance."
+
+                for entry in new_je.get_pieces():
+                    print "*" + str(entry)
+                final_loop = False
+
+        elif input_final == 'N' or input_final == 'n':
+            final_loop = False
+
+        elif input_final == 'X' or input_final == 'x':
+            final_loop = False
+            aje_lines_loop = False
+
+    return (aje_count, aje_lines_loop)
 
 def create_aje():
     """Make an AJE"""
@@ -139,58 +221,14 @@ def create_aje():
                 debit_loop = False
 
         #confirmation of JE line
-        confirm = False
-        while not confirm:
-            for line in aje_lines_list:
-                print "* " + str(line)
-            print(str(aje_lines) + " " + input_sign + " " + input_acct + " " + input_value)
-            input_confirm = raw_input("Is this line correct?(Y/N): ")
+        updated_ajes = je_line_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value)
+        aje_lines_list = updated_ajes[0]
+        aje_lines = updated_ajes[1]
 
-            if input_confirm == 'Y' or input_confirm == 'y':
-
-                #prep debit/credit sign
-                if input_sign == 'Dr':
-                    input_debit = True
-                else:
-                    input_debit = False
-
-                journal_piece = JournalPiece(input_acct, input_value, input_debit, aje_count)
-                aje_lines_list.append(journal_piece)
-                aje_lines += 1
-
-                confirm = True
-
-            elif input_confirm == 'N' or input_confirm == 'n':
-                confirm = True
-
-        final_loop = True
-        while final_loop:
-            input_final = raw_input("Is this journal entry complete?(Y/N/eXit) ")
-
-            if input_final == 'Y' or input_final == 'y':
-                new_je = JournalEntry(aje_count, input_description, aje_lines_list)
-                if new_je.is_balanced():
-                    for entry in new_je.get_pieces():
-                        gl.append(entry)
-                    je_list.append(new_je)
-                    print "JE entered."
-                    aje_count += 1
-                    final_loop = False
-                    aje_lines_loop = False
-
-                else:
-                    print "JE not in balance."
-
-                    for entry in new_je.get_pieces():
-                        print entry
-                    final_loop = False
-
-            elif input_final == 'N' or input_final == 'n':
-                final_loop = False
-
-            elif input_final == 'X' or input_final == 'x':
-                final_loop = False
-                aje_lines_loop = False
+        #confirmation of full JE
+        updated_confirm_loop = confirm_je_loop(aje_count, input_description, aje_lines_list)
+        aje_count = updated_confirm_loop[0]
+        aje_lines_loop = updated_confirm_loop[1]
 
 def aje_module():
     aje_running = True
