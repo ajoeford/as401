@@ -1,10 +1,13 @@
 #Accounting application
 
 from decimal import *
+import sqlite3
+conn = sqlite3.connect('chart.db')
 
-print ""
-print "wlecome to AS401"
-print "the premier accounting softwre for businesses."
+
+print("")
+print("wlecome to AS401")
+print("the premier accounting softwre for businesses.")
 
 running = True
 
@@ -154,6 +157,8 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list):
     JournalPiece[] aje_lines_list
 
     returns: Tuple of updated aje_count and aje_lines_loop.
+
+    If not canceled, adds JE to je_list and gl lists
     """
     global je_list
     global gl
@@ -162,6 +167,7 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list):
     final_loop = True
     while final_loop:
         input_final = raw_input("Is this journal entry complete?(Y/N/eXit) ")
+        print ""
 
         if input_final == 'Y' or input_final == 'y':
             new_je = JournalEntry(aje_count, input_description, aje_lines_list)
@@ -198,6 +204,7 @@ def create_aje():
 
     aje_lines_list = []
 
+    print ""
     print "Journal Entry #" + str(aje_count)
     input_description = raw_input("Enter J/E description: ")
 
@@ -230,6 +237,27 @@ def create_aje():
         aje_count = updated_confirm_loop[0]
         aje_lines_loop = updated_confirm_loop[1]
 
+def print_je(je):
+    print(str(je.get_number()) + str(je.get_description()))
+    for je_line in je.get_pieces():
+        print(je_line)
+
+def view_je():
+    """
+    Prints JE's based on JE number
+    """
+
+    je_query = int(raw_input("Lookup JE by #: "))
+
+    for je in je_list:
+        if je_query == je.get_number():
+            print_je(je)
+            print("")
+            break
+    else:
+        print("JE# not found.")
+
+
 def aje_module():
     aje_running = True
 
@@ -240,11 +268,15 @@ def aje_module():
 
         user_input = raw_input("Enter Command: ")
 
-        if user_input == "X":
+        if user_input == "X" or user_input == "x":
             aje_running = False
 
         elif user_input == "1":
             create_aje()
+
+        elif user_input == "2":
+            view_je()
+
 
 def create_account():
     """Add an account to the TB"""
@@ -287,6 +319,7 @@ def create_account():
             if continue_prompt == 'Y' or continue_prompt == 'y':
                 new_account = TBAccount(acct_num, acct_name, acct_classification)
                 chart_of_accounts.append(new_account)
+
 
                 unaccepted = False
                 create_account_running = False
@@ -359,9 +392,16 @@ def delete_account():
         if affirm == 'Y' or affirm == 'y':
             chart_of_accounts.remove(to_delete)
 
+def initiate_chart_db(dbcon):
+
+    dbcon.execute('''CREATE TABLE chartofaccounts
+                    (num text, description text, classification text)''')
+
 def chart_module():
     global chart_of_accounts
     chart_running = True
+
+    dbcon = conn.cursor()
 
     while chart_running:
         print ""
@@ -372,6 +412,7 @@ def chart_module():
         print "2) Edit Existing Account"
         print "3) View Chart of Accounts"
         print "4) Delete Existing Account"
+        print "5) Initiate Chart DB"
         print "X) Exit\n"
 
         user_input = raw_input("Enter Command: ")
@@ -396,6 +437,11 @@ def chart_module():
 
         elif user_input == "4":
             delete_account()
+
+        elif user_input == "5":
+            initiate_chart_db(dbcon)
+
+    dbcon.close()
 
 def Main():
     global running
