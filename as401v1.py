@@ -2,7 +2,7 @@
 
 from decimal import *
 import sqlite3
-conn = sqlite3.connect('chart.db')
+dbcon = sqlite3.connect('chart.db')
 
 
 print("")
@@ -16,6 +16,9 @@ chart_of_accounts = []
 gl = []
 je_list = []
 aje_count = 1
+
+account_classification_list = {'A':'Asset','L':'Liability','OE':'Equity',
+    'R':'Revenue','E':'Expense'}
 
 class TBAccount(object):
     """Class for individual TB Accounts
@@ -257,7 +260,6 @@ def view_je():
     else:
         print("JE# not found.")
 
-
 def aje_module():
     aje_running = True
 
@@ -278,7 +280,7 @@ def aje_module():
             view_je()
 
 
-def create_account():
+def create_account(dbcur, dbcon):
     """Add an account to the TB"""
     global chart_of_accounts
     create_account_running = True
@@ -317,9 +319,13 @@ def create_account():
             continue_prompt = raw_input("Is this correct? (Y/N) ")
 
             if continue_prompt == 'Y' or continue_prompt == 'y':
+                new_account_tuple = (acct_num, acct_name, acct_classification)
+                dbcur.execute("INSERT INTO chartofaccounts VALUES (?,?,?)", new_account_tuple)
+                dbcon.commit()
+
+                #Non db code:
                 new_account = TBAccount(acct_num, acct_name, acct_classification)
                 chart_of_accounts.append(new_account)
-
 
                 unaccepted = False
                 create_account_running = False
@@ -370,7 +376,19 @@ def edit_account():
     else:
         print("Invalid account number.")
 
-def delete_account():
+def view_chart(dbcur):
+    print ""
+
+    dbcur.execute("SELECT * FROM chartofaccounts")
+    all_chart = dbcur.fetchall()
+
+    if all_chart:
+        for acct in all_chart:
+            print(acct[0]+" "+acct[1])
+    else:
+        print("No TB accounts.")
+        
+def delete_account(dbcur, dbcon):
     """Remove account from Chart of Accounts"""
     global chart_of_accounts
     to_delete = ""
@@ -390,18 +408,21 @@ def delete_account():
         print(to_delete.get_acct_num() + " "+ to_delete.get_acct_name())
         affirm = raw_input("Delete? (Y/N) ")
         if affirm == 'Y' or affirm == 'y':
+            dbcur.execute("DELETE FROM chartofaccounts WHERE num=?", (to_delete,))
+            dbcon.commit()
+            #old non-db code:
             chart_of_accounts.remove(to_delete)
 
-def initiate_chart_db(dbcon):
+def initiate_chart_db(dbcur):
 
-    dbcon.execute('''CREATE TABLE chartofaccounts
+    dbcur.execute('''CREATE TABLE chartofaccounts
                     (num text, description text, classification text)''')
 
-def chart_module():
+def chart_module(dbcon):
     global chart_of_accounts
     chart_running = True
 
-    dbcon = conn.cursor()
+    dbcur = dbcon.cursor()
 
     while chart_running:
         print ""
@@ -421,7 +442,7 @@ def chart_module():
             chart_running = False
 
         elif user_input == "1":
-            create_account()
+            create_account(dbcur, dbcon)
 
         elif user_input == "2":
             edit_account()
@@ -429,23 +450,28 @@ def chart_module():
         elif user_input == "3":
             print ""
 
+            dbcur.execute("SELECT * FROM chartofaccounts")
+            all_chart = dbcur.fetchall()
+
+            for acct in all_chart:
+                print(acct[0]+" "+acct[1])
+            '''
             if not chart_of_accounts:
                 print("No TB Accounts.")
 
             for account in chart_of_accounts:
                 print account.get_acct_num() + ' ' + account.get_acct_name()
-
+            '''
         elif user_input == "4":
-            delete_account()
+            delete_account(dbcur, dbcon)
 
         elif user_input == "5":
-            initiate_chart_db(dbcon)
+            initiate_chart_db(dbcur)
 
-    dbcon.close()
 
-def Main():
+def Main(dbcon):
     global running
-    print "1) Enter J/E"
+    print "1) J/E Module"
     print "2) View J/E"
     print "3) Chart of Accounts"
     print "X) Exit\n"
@@ -459,8 +485,9 @@ def Main():
     elif user_input == '1':
         aje_module()
     elif user_input == '3':
-        chart_module()
+        chart_module(dbcon)
 
 while running:
 
-    Main()
+    Main(dbcon)
+    dbcon.close()
