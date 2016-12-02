@@ -333,20 +333,19 @@ def create_account(dbcur, dbcon):
             if continue_prompt == 'N':
                 unaccepted = False
 
-def edit_account():
+def edit_account(dbcur, dbcon):
     """Change account name or classification based on account number"""
     global chart_of_accounts
     valid_account = ""
 
     acct_input = raw_input("Enter account number: ")
-    for account in chart_of_accounts:
-        if account.get_acct_num() == acct_input:
-            valid_account = account
-            break
 
-    if valid_account != "":
-        print(valid_account.get_acct_num() + " "+ valid_account.get_acct_name())
-        print("Classification: " + valid_account.get_acct_classification())
+    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (acct_input,))
+    to_edit = dbcur.fetchone()
+
+    if to_edit:
+        print(to_edit[0]+" "+to_edit[1])
+        print("Classification: "+to_edit[2])
 
         edited = False
         while edited == False:
@@ -355,7 +354,8 @@ def edit_account():
             if ask_name == 'Y' or ask_name == 'y':
                 new_name = raw_input("Enter new name: ")
 
-                valid_account.set_acct_name(new_name)
+                dbcur.execute("UPDATE chartofaccounts SET description=? WHERE num=?", (new_name,acct_input))
+                dbcon.commit()
                 edited = True
 
             ask_class = raw_input("Change account classification? (Y/N) ")
@@ -368,13 +368,48 @@ def edit_account():
                     print "Enter account classification (A/L/OE/R/E)"
                     acct_classification = raw_input("Classification: ")
 
-                valid_account.set_acct_classification(acct_classification)
+                dbcur.execute("UPDATE chartofaccounts SET classification=? WHERE num=?", (acct_classification,),(acct_input,))
+                dbcon.commit()
                 edited = True
-
-            print(valid_account.get_acct_num() + " "+ valid_account.get_acct_name())
-            print("Classification: " + valid_account.get_acct_classification())
     else:
         print("Invalid account number.")
+
+    # for account in chart_of_accounts:
+    #     if account.get_acct_num() == acct_input:
+    #         valid_account = account
+    #         break
+    #
+    # if valid_account != "":
+    #     print(valid_account.get_acct_num() + " "+ valid_account.get_acct_name())
+    #     print("Classification: " + valid_account.get_acct_classification())
+    #
+    #     edited = False
+    #     while edited == False:
+    #         ask_name = raw_input("Edit account name? (Y/N) ")
+    #
+    #         if ask_name == 'Y' or ask_name == 'y':
+    #             new_name = raw_input("Enter new name: ")
+    #
+    #             valid_account.set_acct_name(new_name)
+    #             edited = True
+    #
+    #         ask_class = raw_input("Change account classification? (Y/N) ")
+    #
+    #         if ask_class == 'Y' or ask_class == 'y':
+    #
+    #             acct_classification = ""
+    #             while acct_classification not in ["A", "L", "OE", "R", "E"]:
+    #
+    #                 print "Enter account classification (A/L/OE/R/E)"
+    #                 acct_classification = raw_input("Classification: ")
+    #
+    #             valid_account.set_acct_classification(acct_classification)
+    #             edited = True
+    #
+    #         print(valid_account.get_acct_num() + " "+ valid_account.get_acct_name())
+    #         print("Classification: " + valid_account.get_acct_classification())
+    # else:
+    #     print("Invalid account number.")
 
 def view_chart(dbcur):
     print ""
@@ -387,7 +422,7 @@ def view_chart(dbcur):
             print(acct[0]+" "+acct[1])
     else:
         print("No TB accounts.")
-        
+
 def delete_account(dbcur, dbcon):
     """Remove account from Chart of Accounts"""
     global chart_of_accounts
@@ -396,22 +431,28 @@ def delete_account(dbcur, dbcon):
     print("")
     delete_num = raw_input("Enter account number: ")
 
-    for account in chart_of_accounts:
-        if account.get_acct_num() == delete_num:
-            to_delete = account
+    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (delete_num,))
+    to_delete = dbcur.fetchone()
 
-    if to_delete == "":
-        print("Invalid account number.")
-
-    else:
+    if to_delete:
         print("Are you sure you want to delete the following account?")
-        print(to_delete.get_acct_num() + " "+ to_delete.get_acct_name())
+        print(to_delete[0] + " "+to_delete[1])
+
         affirm = raw_input("Delete? (Y/N) ")
         if affirm == 'Y' or affirm == 'y':
-            dbcur.execute("DELETE FROM chartofaccounts WHERE num=?", (to_delete,))
+            dbcur.execute("DELETE FROM chartofaccounts WHERE num=?", (delete_num,))
             dbcon.commit()
-            #old non-db code:
-            chart_of_accounts.remove(to_delete)
+    else:
+        print("Invalid account number.")
+
+def view_chart(dbcur):
+    print ""
+
+    dbcur.execute("SELECT * FROM chartofaccounts")
+    all_chart = dbcur.fetchall()
+
+    for acct in all_chart:
+        print(acct[0]+" "+acct[1])
 
 def initiate_chart_db(dbcur):
 
@@ -445,23 +486,11 @@ def chart_module(dbcon):
             create_account(dbcur, dbcon)
 
         elif user_input == "2":
-            edit_account()
+            edit_account(dbcur, dbcon)
 
         elif user_input == "3":
-            print ""
+            view_chart(dbcur)
 
-            dbcur.execute("SELECT * FROM chartofaccounts")
-            all_chart = dbcur.fetchall()
-
-            for acct in all_chart:
-                print(acct[0]+" "+acct[1])
-            '''
-            if not chart_of_accounts:
-                print("No TB Accounts.")
-
-            for account in chart_of_accounts:
-                print account.get_acct_num() + ' ' + account.get_acct_name()
-            '''
         elif user_input == "4":
             delete_account(dbcur, dbcon)
 
@@ -481,7 +510,7 @@ def Main(dbcon):
     if user_input == "X":
         print "Goodbye\n"
         running = False
-
+        dbcon.close()
     elif user_input == '1':
         aje_module()
     elif user_input == '3':
@@ -490,4 +519,3 @@ def Main(dbcon):
 while running:
 
     Main(dbcon)
-    dbcon.close()
