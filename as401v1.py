@@ -260,12 +260,20 @@ def view_je():
     else:
         print("JE# not found.")
 
-def aje_module():
+def initiate_gl(dbcon):
+    dbcur = dbcon.cursor()
+
+    dbcur.execute('''CREATE TABLE GL
+                    (account text, value real, debcred text, je_number integer, description text)''')
+
+
+def aje_module(dbcon):
     aje_running = True
 
     while aje_running:
         print "1) Enter J/E"
         print "2) View J/E"
+        print "8) Initiate G/L"
         print "X) Exit\n"
 
         user_input = raw_input("Enter Command: ")
@@ -278,6 +286,9 @@ def aje_module():
 
         elif user_input == "2":
             view_je()
+
+        elif user_input == "8":
+            initiate_gl(dbcon)
 
 
 def create_account(dbcur, dbcon):
@@ -311,6 +322,7 @@ def create_account(dbcur, dbcon):
             print "Enter account classification (A/L/OE/R/E)"
             acct_classification = raw_input(" ")
 
+        acct_classification = account_classification_list[acct_classification]
         print acct_num + ' ' + acct_name
         print "Account Classification: " + acct_classification
 
@@ -322,10 +334,6 @@ def create_account(dbcur, dbcon):
                 new_account_tuple = (acct_num, acct_name, acct_classification)
                 dbcur.execute("INSERT INTO chartofaccounts VALUES (?,?,?)", new_account_tuple)
                 dbcon.commit()
-
-                #Non db code:
-                new_account = TBAccount(acct_num, acct_name, acct_classification)
-                chart_of_accounts.append(new_account)
 
                 unaccepted = False
                 create_account_running = False
@@ -367,49 +375,12 @@ def edit_account(dbcur, dbcon):
 
                     print "Enter account classification (A/L/OE/R/E)"
                     acct_classification = raw_input("Classification: ")
-
-                dbcur.execute("UPDATE chartofaccounts SET classification=? WHERE num=?", (acct_classification,),(acct_input,))
+                acct_classification = account_classification_list[acct_classification]
+                dbcur.execute("UPDATE chartofaccounts SET classification=? WHERE num=?", (acct_classification,acct_input))
                 dbcon.commit()
                 edited = True
     else:
         print("Invalid account number.")
-
-    # for account in chart_of_accounts:
-    #     if account.get_acct_num() == acct_input:
-    #         valid_account = account
-    #         break
-    #
-    # if valid_account != "":
-    #     print(valid_account.get_acct_num() + " "+ valid_account.get_acct_name())
-    #     print("Classification: " + valid_account.get_acct_classification())
-    #
-    #     edited = False
-    #     while edited == False:
-    #         ask_name = raw_input("Edit account name? (Y/N) ")
-    #
-    #         if ask_name == 'Y' or ask_name == 'y':
-    #             new_name = raw_input("Enter new name: ")
-    #
-    #             valid_account.set_acct_name(new_name)
-    #             edited = True
-    #
-    #         ask_class = raw_input("Change account classification? (Y/N) ")
-    #
-    #         if ask_class == 'Y' or ask_class == 'y':
-    #
-    #             acct_classification = ""
-    #             while acct_classification not in ["A", "L", "OE", "R", "E"]:
-    #
-    #                 print "Enter account classification (A/L/OE/R/E)"
-    #                 acct_classification = raw_input("Classification: ")
-    #
-    #             valid_account.set_acct_classification(acct_classification)
-    #             edited = True
-    #
-    #         print(valid_account.get_acct_num() + " "+ valid_account.get_acct_name())
-    #         print("Classification: " + valid_account.get_acct_classification())
-    # else:
-    #     print("Invalid account number.")
 
 def view_chart(dbcur):
     print ""
@@ -512,7 +483,7 @@ def Main(dbcon):
         running = False
         dbcon.close()
     elif user_input == '1':
-        aje_module()
+        aje_module(dbcon)
     elif user_input == '3':
         chart_module(dbcon)
 
