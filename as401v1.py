@@ -1,7 +1,9 @@
 #Accounting application
 
 from decimal import *
+import pickle
 import sqlite3
+
 dbcon = sqlite3.connect('chart.db')
 
 
@@ -56,7 +58,7 @@ class JournalPiece(object):
     def __init__(self, acct, value, debit, je_num):
         super(JournalPiece, self).__init__()
         self.acct = acct
-        self.value = Decimal(value)
+        self.value = Decimal(value) #crashes if input is not a number
         self.debit = debit
         self.je_num = je_num
 
@@ -64,7 +66,7 @@ class JournalPiece(object):
         return self.acct
 
     def get_value(self):
-        return self.value
+        return int(self.value*100)
 
     def is_debit(self):
         return self.debit
@@ -73,6 +75,9 @@ class JournalPiece(object):
         return self.je_num
 
     def __repr__(self):
+
+        value_str = str(self.value)
+
         if self.debit == True:
             return "Dr " + self.acct + " " + str(self.value)
         else:
@@ -114,7 +119,7 @@ class JournalEntry(object):
     def __str__(self):
         out = str(self.number)
 
-def je_line_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value):
+def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value):
     """Loop for JE lines"""
     """parameters:
     List aje_lines_list
@@ -152,7 +157,7 @@ def je_line_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value)
         elif input_confirm == 'N' or input_confirm == 'n':
             return (aje_lines_list, aje_lines)
 
-def confirm_je_loop(aje_count, input_description, aje_lines_list):
+def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
     """
     parameters:
     Int aje_count
@@ -167,6 +172,8 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list):
     global gl
     aje_lines_loop = True
 
+    dbcur = dbcon.cursor()
+
     final_loop = True
     while final_loop:
         input_final = raw_input("Is this journal entry complete?(Y/N/eXit) ")
@@ -176,6 +183,10 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list):
             new_je = JournalEntry(aje_count, input_description, aje_lines_list)
             if new_je.is_balanced():
                 for entry in new_je.get_pieces():
+                    dbcur.execute("INSERT INTO gl VALUES (?,?,?,?,?)",
+                    (entry.get_acct(), entry.get_value(), entry.is_debit(), aje_count, input_description))
+                    dbcon.commit()
+                    #old code pre db
                     gl.append(entry)
                 je_list.append(new_je)
                 print "JE entered."
@@ -199,11 +210,15 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list):
 
     return (aje_count, aje_lines_loop)
 
-def create_aje():
+def create_aje(dbcon):
     """Make an AJE"""
     global gl
     global aje_count
     global je_list
+
+    read_pkl = open('gldata.pkl', 'rb')
+    aje_count = pickle.load(read_pkl)
+    read_pkl.close()
 
     aje_lines_list = []
 
@@ -231,14 +246,19 @@ def create_aje():
                 debit_loop = False
 
         #confirmation of JE line
-        updated_ajes = je_line_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value)
+        updated_ajes = je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value)
         aje_lines_list = updated_ajes[0]
         aje_lines = updated_ajes[1]
 
         #confirmation of full JE
-        updated_confirm_loop = confirm_je_loop(aje_count, input_description, aje_lines_list)
+        updated_confirm_loop = confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon)
         aje_count = updated_confirm_loop[0]
         aje_lines_loop = updated_confirm_loop[1]
+
+        #write new aje_count to file
+        pkl_cursor = open('gldata.pkl', 'wb')
+        pickle.dump(aje_count, pkl_cursor)
+        pkl_cursor.close()
 
 def print_je(je):
     print(str(je.get_number()) + str(je.get_description()))
@@ -264,8 +284,13 @@ def initiate_gl(dbcon):
     dbcur = dbcon.cursor()
 
     dbcur.execute('''CREATE TABLE GL
-                    (account text, value real, debcred text, je_number integer, description text)''')
+                    (account text, value integer, debcred text, je_number integer, description text)''')
 
+    #start aje counter
+    aje_count = 1
+    write_to_pickle = open('gldata.pkl', 'wb')
+    pickle.dump(aje_count, write_to_pickle)
+    write_to_pickle.close()
 
 def aje_module(dbcon):
     aje_running = True
@@ -282,7 +307,7 @@ def aje_module(dbcon):
             aje_running = False
 
         elif user_input == "1":
-            create_aje()
+            create_aje(dbcon)
 
         elif user_input == "2":
             view_je()
