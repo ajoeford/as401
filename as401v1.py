@@ -22,6 +22,21 @@ aje_count = 1
 account_classification_list = {'A':'Asset','L':'Liability','OE':'Equity',
     'R':'Revenue','E':'Expense'}
 
+class DatabaseManager(object):
+    '''Class to handle sqlite3 connection'''
+
+    def __init__(self, db):
+        self.conn = sqlite3.connect(db)
+        self.cur = self.conn.cursor()
+
+    def query(self, args):
+        self.cur.execute(args)
+        self.conn.commit()
+        return self.cur
+
+    def __del__(self):
+        self.conn.close()
+
 class TBAccount(object):
     """Class for individual TB Accounts
     String acct_num = account number
@@ -260,23 +275,25 @@ def create_aje(dbcon):
         pickle.dump(aje_count, pkl_cursor)
         pkl_cursor.close()
 
-def print_je(je):
-    print(str(je.get_number()) + str(je.get_description()))
-    for je_line in je.get_pieces():
-        print(je_line)
+def print_piece(piece, dbman):
+    print("JE "+str(piece[3])+":" + piece[4])
+    print(piece[0]+" "+str(piece[1])+" "+piece[2])
 
-def view_je():
+def view_je(dbcon):
     """
     Prints JE's based on JE number
     """
 
+    dbcur = dbcon.cursor()
+
     je_query = int(raw_input("Lookup JE by #: "))
 
-    for je in je_list:
-        if je_query == je.get_number():
-            print_je(je)
-            print("")
-            break
+    dbcur.execute("SELECT * FROM gl WHERE je_number=?",(je_query,))
+    je_pieces = dbcur.fetchall()
+
+    if je_pieces:
+        for piece in je_pieces:
+            print_piece(piece, dbcon)
     else:
         print("JE# not found.")
 
@@ -310,7 +327,7 @@ def aje_module(dbcon):
             create_aje(dbcon)
 
         elif user_input == "2":
-            view_je()
+            view_je(dbcon)
 
         elif user_input == "8":
             initiate_gl(dbcon)
