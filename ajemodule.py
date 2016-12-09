@@ -95,6 +95,9 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
 
     return (aje_count, aje_lines_loop)
 
+def account_exists(input):
+    return True
+
 def create_aje(dbcon):
     """Make an AJE"""
     global gl
@@ -117,7 +120,16 @@ def create_aje(dbcon):
         print ""
         print "JE Line " + str(aje_lines) + ":"
 
-        input_acct = raw_input("Enter account: ")
+        valid_account = False
+        while valid_account == False:
+            input_acct = raw_input("Enter account: ")
+
+            valid_account = account_exists(input_acct)
+
+            if input_acct == 'X':
+                break
+
+
         input_value = raw_input("Enter amount: ")
 
         debit_loop = True
