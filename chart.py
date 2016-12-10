@@ -7,8 +7,15 @@ import sqlite3
 account_classification_list = {'A':'Asset','L':'Liability','OE':'Equity',
     'R':'Revenue','E':'Expense'}
 
-def tb_account_exists(acct_num):
-    return False
+def tb_account_exists(acct_num, dbcur):
+    """Test to see if account already exists
+        returns boolean"""
+
+    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
+    if dbcur.fetchone():
+        return True
+    else:
+        return False
 
 def create_account(dbcur, dbcon):
     """Add an account to the TB"""
@@ -24,8 +31,10 @@ def create_account(dbcur, dbcon):
             print "Enter account number: "
             acct_num = raw_input(" ")
 
-            if tb_account_exists(acct_num) == False:
+            if tb_account_exists(acct_num, dbcur) == False:
                 num_loop = False
+            else:
+                print("Account number already exists.")
 
         print "Enter account name: "
         acct_name = raw_input(" ")

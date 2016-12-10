@@ -5,7 +5,12 @@ from decimal import *
 import pickle
 from classes import *
 
-def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value):
+def get_acct_description(acct_num, dbcur):
+    #get account description
+    dbcur.execute("SELECT description FROM chartofaccounts WHERE num=?", (acct_num,))
+    return dbcur.fetchone()[0]
+
+def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value, dbcur):
     """Loop for JE lines"""
     """parameters:
     List aje_lines_list
@@ -19,10 +24,12 @@ def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value
 
     looped = True
     while looped:
+        print("")
         for line in aje_lines_list:
-            print "* " + str(line)
-        print(str(aje_lines) + " " + input_sign + " " + input_acct + " " + input_value)
-        print ""
+            print("* " + line.print_line(dbcur))
+        print(str(aje_lines) + " " + input_sign + " " + input_acct +
+            " "+ get_acct_description(input_acct,dbcur) +" " + input_value)
+
         input_confirm = raw_input("Is this line correct?(Y/N): ")
 
         if input_confirm == 'Y' or input_confirm == 'y':
@@ -34,9 +41,12 @@ def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value
                 input_debit = False
 
             #create JE piece and add to list
-            journal_piece = JournalPiece(input_acct, input_value, input_debit, aje_count)
-            aje_lines_list.append(journal_piece)
-            aje_lines += 1
+            try:
+                journal_piece = JournalPiece(input_acct, input_value, input_debit, aje_count)
+                aje_lines_list.append(journal_piece)
+                aje_lines += 1
+            except:
+                print("Error processing JE line. Line not entered.")
 
             return (aje_lines_list, aje_lines)
 
@@ -63,7 +73,6 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
     final_loop = True
     while final_loop:
         input_final = raw_input("Is this journal entry complete?(Y/N/eXit) ")
-        print ""
 
         if input_final == 'Y' or input_final == 'y':
             new_je = JournalEntry(aje_count, input_description, aje_lines_list)
@@ -73,7 +82,6 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
                     (entry.get_acct(), entry.get_value(), entry.is_debit(), aje_count, input_description))
                     dbcon.commit()
 
-                je_list.append(new_je)
                 print "JE entered."
                 aje_count += 1
                 final_loop = False
@@ -95,14 +103,23 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
 
     return (aje_count, aje_lines_loop)
 
-def account_exists(input):
-    return True
+def account_exists(acct_num, dbcur):
+    """Test to see if account already exists
+        returns boolean"""
+
+    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
+    if dbcur.fetchone():
+        return True
+    else:
+        return False
 
 def create_aje(dbcon):
     """Make an AJE"""
     global gl
     global aje_count
     global je_list
+
+    dbcur = dbcon.cursor()
 
     read_pkl = open('gldata.pkl', 'rb')
     aje_count = pickle.load(read_pkl)
@@ -124,10 +141,14 @@ def create_aje(dbcon):
         while valid_account == False:
             input_acct = raw_input("Enter account: ")
 
-            valid_account = account_exists(input_acct)
-
             if input_acct == 'X':
                 break
+
+            #test if account exists in TB
+            if account_exists(input_acct, dbcur):
+                valid_account = True
+            else:
+                print("TB Account does not exist.")
 
 
         input_value = raw_input("Enter amount: ")
@@ -143,7 +164,8 @@ def create_aje(dbcon):
                 debit_loop = False
 
         #confirmation of JE line
-        updated_ajes = je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value)
+        updated_ajes = je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value,
+                                    dbcur)
         aje_lines_list = updated_ajes[0]
         aje_lines = updated_ajes[1]
 

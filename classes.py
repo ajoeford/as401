@@ -71,6 +71,17 @@ class JournalPiece(object):
     def get_je_num(self):
         return self.je_num
 
+    def print_line(self, dbcur):
+        #Print line with account description pulled from DB
+        value_str = str(self.value)
+        dbcur.execute("SELECT description FROM chartofaccounts WHERE num=?", (self.acct,))
+        self.acct_description = dbcur.fetchone()[0]
+
+        if self.debit == True:
+            return "Dr " + self.acct +" "+ self.acct_description+" " + str(self.value)
+        else:
+            return "Cr " + self.acct +" "+ self.acct_description+" " + str(self.value)
+
     def __repr__(self):
 
         value_str = str(self.value)
