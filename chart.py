@@ -18,7 +18,11 @@ def tb_account_exists(acct_num, dbcur):
         return False
 
 def create_account(dbcur, dbcon):
-    """Add an account to the TB"""
+    """Add an account to the TB
+    Makes change to DB through parameters:
+    dbcur = db connection cursor
+    dbcon = db connection
+    """
     create_account_running = True
 
     while create_account_running:
@@ -65,7 +69,10 @@ def create_account(dbcur, dbcon):
                 unaccepted = False
 
 def edit_account(dbcur, dbcon):
-    """Change account name or classification based on account number"""
+    """Change account name or classification based on account number.
+    dbcur = db connection cursor
+    dbcon = db connection
+    """
     valid_account = ""
 
     acct_input = raw_input("Enter account number: ")
@@ -108,6 +115,9 @@ def edit_account(dbcur, dbcon):
         print("Invalid account number.")
 
 def view_chart(dbcur):
+    """prints all entries in chartofaccounts db
+    probably should update this to return rather than straight print
+    """
     print ""
 
     dbcur.execute("SELECT * FROM chartofaccounts ORDER BY num")
@@ -120,7 +130,10 @@ def view_chart(dbcur):
         print("No TB accounts.")
 
 def delete_account(dbcur, dbcon):
-    """Remove account from Chart of Accounts"""
+    """Remove account from Chart of Accounts.
+    dbcur = db connection cursor
+    dbcon = db connection
+    """
     to_delete = ""
 
     print("")
@@ -141,11 +154,24 @@ def delete_account(dbcur, dbcon):
         print("Invalid account number.")
 
 def initiate_chart_db(dbcur):
+    """Creates table in DB for the chart of accounts.
+    dbcur = db connection cursor
+    """
 
-    dbcur.execute('''CREATE TABLE chartofaccounts
-                    (num text, description text, classification text)''')
+    confirm = raw_input("Please enter admin password: ")
+
+    if confirm == "saltedpork":
+        dbcur.execute('''CREATE TABLE chartofaccounts
+                        (num text, description text, classification text)''')
+        #why isn't a db commit required here?
+        print("Chart of accounts initiated.")
+
+    else:
+        print("Incorrect password.")
 
 def chart_module(dbcon):
+    """Menu loop for the Chart of Accounts module.
+    dbcon = db connection from sqlite3"""
     chart_running = True
 
     dbcur = dbcon.cursor()

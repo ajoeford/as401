@@ -1,5 +1,5 @@
 #
-#AJE Module
+#Reporting Module
 #
 from decimal import *
 import pickle
@@ -216,47 +216,26 @@ def view_je(dbcon):
 
     dbcur.close()
 
-def initiate_gl(dbcon):
+def reporting_module(dbcon):
+    running = True
 
-    confirm = raw_input("Please enter admin password: ")
-
-    if confirm == "saltedpork":
-
-        dbcur = dbcon.cursor()
-
-        dbcur.execute('''CREATE TABLE GL
-                        (account text, value integer, debcred text, je_number integer, description text)''')
-
-        #start aje counter
-        aje_count = 1
-        write_to_pickle = open('gldata.pkl', 'wb')
-        pickle.dump(aje_count, write_to_pickle)
-        write_to_pickle.close()
-        print("GL initiated.")
-
-    else:
-        print("Incorrect password.")
-
-def aje_module(dbcon):
-    aje_running = True
-
-    while aje_running:
+    while running:
         print ""
-        print "1) Enter J/E"
-        print "2) View J/E"
-        print "8) Initiate G/L"
+        print "1) View Account Balance"
+        print "2) View Account Detail"
+        print "3) View TB"
         print "X) Back\n"
 
         user_input = raw_input("Enter Command: ")
 
         if user_input == "X" or user_input == "x":
-            aje_running = False
+            running = False
 
         elif user_input == "1":
-            create_aje(dbcon)
+            pass
 
         elif user_input == "2":
-            view_je(dbcon)
+            pass
 
         elif user_input == "8":
-            initiate_gl(dbcon)
+            pass
