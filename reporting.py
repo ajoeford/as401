@@ -1,7 +1,7 @@
 #
 #Reporting Module
 #
-from decimal import *
+import ajemodule
 import pickle
 from classes import *
 
@@ -9,109 +9,6 @@ def get_acct_description(acct_num, dbcur):
     #get account description
     dbcur.execute("SELECT description FROM chartofaccounts WHERE num=?", (acct_num,))
     return dbcur.fetchone()[0]
-
-def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value, dbcur):
-    """Loop for JE lines"""
-    """parameters:
-    List aje_lines_list
-    Int aje_lines
-    String input_sign
-    String input_acct
-    Decimal input_value
-
-    returns: A tuple of updated aje_lines_list and aje_lines
-    """
-
-    looped = True
-    while looped:
-        print("")
-        for line in aje_lines_list:
-            print("* " + line.print_line(dbcur))
-        print(str(aje_lines) + " " + input_sign + " " + input_acct +
-            " "+ get_acct_description(input_acct,dbcur) +" " + input_value)
-
-        input_confirm = raw_input("Is this line correct?(Y/N): ")
-
-        if input_confirm == 'Y' or input_confirm == 'y':
-
-            #prep debit/credit sign
-            if input_sign == 'Dr':
-                input_debit = True
-            else:
-                input_debit = False
-
-            #create JE piece and add to list
-            try:
-                journal_piece = JournalPiece(input_acct, input_value, input_debit, aje_count)
-                aje_lines_list.append(journal_piece)
-                aje_lines += 1
-            except:
-                print("Error processing JE line. Line not entered.")
-
-            return (aje_lines_list, aje_lines)
-
-        elif input_confirm == 'N' or input_confirm == 'n':
-            return (aje_lines_list, aje_lines)
-
-def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
-    """
-    parameters:
-    Int aje_count
-    String input_description
-    JournalPiece[] aje_lines_list
-
-    returns: Tuple of updated aje_count and aje_lines_loop.
-
-    If not canceled, adds JE to je_list and gl lists
-    """
-    global je_list
-    global gl
-    aje_lines_loop = True
-
-    dbcur = dbcon.cursor()
-
-    final_loop = True
-    while final_loop:
-        input_final = raw_input("Is this journal entry complete?(Y/N/eXit) ")
-
-        if input_final == 'Y' or input_final == 'y':
-            new_je = JournalEntry(aje_count, input_description, aje_lines_list)
-            if new_je.is_balanced():
-                for entry in new_je.get_pieces():
-                    dbcur.execute("INSERT INTO gl VALUES (?,?,?,?,?)",
-                    (entry.get_acct(), entry.get_value(), entry.is_debit(), aje_count, input_description))
-                    dbcon.commit()
-
-                print "JE entered."
-                aje_count += 1
-                final_loop = False
-                aje_lines_loop = False
-
-            else:
-                print "JE not in balance."
-
-                for entry in new_je.get_pieces():
-                    print "*" + str(entry)
-                final_loop = False
-
-        elif input_final == 'N' or input_final == 'n':
-            final_loop = False
-
-        elif input_final == 'X' or input_final == 'x':
-            final_loop = False
-            aje_lines_loop = False
-
-    return (aje_count, aje_lines_loop)
-
-def account_exists(acct_num, dbcur):
-    """Test to see if account already exists
-        returns boolean"""
-
-    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
-    if dbcur.fetchone():
-        return True
-    else:
-        return False
 
 def create_aje(dbcon):
     """Make an AJE"""
@@ -194,9 +91,18 @@ def print_piece(piece, dbcur):
 
     print(sign +" "+piece[0]+" "+acct_description+" "+str(piece[1]))
 
-def view_je(dbcon):
+def account_balance(acct_num):
     """
-    Prints JE's based on JE number
+    Summary: Takes TB account number, returns TB account balance
+    Parameters: String acct_num
+    returns: Int balance
+    """
+
+    #test if account exists now or in prompt function?
+
+def view_balance_prompt(dbcon):
+    """
+    Prints TB account, description, and balance
     """
 
     dbcur = dbcon.cursor()

@@ -3,6 +3,7 @@
 #
 
 from decimal import *
+import sqlite3
 
 class DatabaseManager(object):
     '''Class to handle sqlite3 connection'''
@@ -18,6 +19,13 @@ class DatabaseManager(object):
 
     def __del__(self):
         self.conn.close()
+
+class DBManagerDatetime(DatabaseManager):
+    """Class to handle sqlite3 connection with datetime parsing"""
+
+    def __init__(self, db):
+        self.conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
+        self.cur = self.conn.cursor()
 
 class TBAccount(object):
     """Class for individual TB Accounts

@@ -4,6 +4,7 @@
 from decimal import *
 import pickle
 from classes import *
+from datetime import datetime
 
 def get_acct_description(acct_num, dbcur):
     #get account description
@@ -17,7 +18,7 @@ def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value
     Int aje_lines
     String input_sign
     String input_acct
-    Decimal input_value
+    Int input_value
 
     returns: A tuple of updated aje_lines_list and aje_lines
     """
@@ -78,8 +79,8 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
             new_je = JournalEntry(aje_count, input_description, aje_lines_list)
             if new_je.is_balanced():
                 for entry in new_je.get_pieces():
-                    dbcur.execute("INSERT INTO gl VALUES (?,?,?,?,?)",
-                    (entry.get_acct(), entry.get_value(), entry.is_debit(), aje_count, input_description))
+                    dbcur.execute("INSERT INTO gl VALUES (?,?,?,?,?,?)",
+                    (datetime.now(), entry.get_acct(), entry.get_value(), entry.is_debit(), aje_count, input_description))
                     dbcon.commit()
 
                 print "JE entered."
@@ -208,7 +209,7 @@ def view_je(dbcon):
 
     if je_pieces:
         print("")
-        print("JE "+str(je_pieces[0][3])+": " + je_pieces[0][4])
+        print("JE "+str(je_pieces[0][4])+": " + je_pieces[0][5])
         for piece in je_pieces:
             print_piece(piece, dbcur)
     else:
@@ -225,7 +226,7 @@ def initiate_gl(dbcon):
         dbcur = dbcon.cursor()
 
         dbcur.execute('''CREATE TABLE GL
-                        (account text, value integer, debcred text, je_number integer, description text)''')
+                        (entry_date timestamp, account text, value integer, debcred text, je_number integer, description text)''')
 
         #start aje counter
         aje_count = 1

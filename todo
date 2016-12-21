@@ -1,0 +1,10 @@
+ajemodule:
+  Need to update printout of JEs to add decimal point
+  add dates to GL...
+    add datetime to JE pieces
+
+reporting module:
+  print account balance
+
+program wide:
+  put in try clauses for sql entries
