@@ -12,10 +12,16 @@ class DatabaseManager(object):
         self.conn = sqlite3.connect(db)
         self.cur = self.conn.cursor()
 
-    def query(self, args):
-        self.cur.execute(args)
+    def query(self, *args):
+        self.cur.execute(*args)
         self.conn.commit()
         return self.cur
+
+    def fetchone(self):
+        return self.cur.fetchone()
+
+    def fetchall(self):
+        return self.cur.fetchall()
 
     def __del__(self):
         self.conn.close()

@@ -8,7 +8,7 @@ from ajemodule import *
 from chart import *
 from reporting import *
 
-dbcon = sqlite3.connect('chart.db')
+dbcon = 'chart.db'
 
 print("")
 print("wlecome to AS401")
@@ -28,7 +28,7 @@ def Main(dbcon):
     if user_input == "X":
         print "Goodbye\n"
         running = False
-        dbcon.close()
+        #dbcon.close()  from previous use of dbcon
     elif user_input == '1':
         aje_module(dbcon)
     elif user_input == '2':

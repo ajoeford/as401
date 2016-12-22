@@ -1,28 +1,33 @@
 #Accounting application
 
 from decimal import *
+from classes import *
 import pickle
 import sqlite3
 
 account_classification_list = {'A':'Asset','L':'Liability','OE':'Equity',
     'R':'Revenue','E':'Expense'}
 
-def tb_account_exists(acct_num, dbcur):
+def tb_account_exists(acct_num, dbcon):
     """Test to see if account already exists
         returns boolean"""
 
-    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
-    if dbcur.fetchone():
+    db = DBManagerDatetime(dbcon)
+
+    db.query("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
+    if db.fetchone():
         return True
     else:
         return False
 
-def create_account(dbcur, dbcon):
+def create_account(dbcon):
     """Add an account to the TB
     Makes change to DB through parameters:
-    dbcur = db connection cursor
-    dbcon = db connection
+    String dbcon: db name
     """
+
+    db = DBManagerDatetime(dbcon)
+
     create_account_running = True
 
     while create_account_running:
@@ -35,7 +40,7 @@ def create_account(dbcur, dbcon):
             print "Enter account number: "
             acct_num = raw_input(" ")
 
-            if tb_account_exists(acct_num, dbcur) == False:
+            if tb_account_exists(acct_num, dbcon) == False:
                 num_loop = False
             else:
                 print("Account number already exists.")
@@ -59,8 +64,7 @@ def create_account(dbcur, dbcon):
 
             if continue_prompt == 'Y' or continue_prompt == 'y':
                 new_account_tuple = (acct_num, acct_name, acct_classification)
-                dbcur.execute("INSERT INTO chartofaccounts VALUES (?,?,?)", new_account_tuple)
-                dbcon.commit()
+                db.query("INSERT INTO chartofaccounts VALUES (?,?,?)", new_account_tuple)
 
                 unaccepted = False
                 create_account_running = False
@@ -68,17 +72,17 @@ def create_account(dbcur, dbcon):
             if continue_prompt == 'N':
                 unaccepted = False
 
-def edit_account(dbcur, dbcon):
+def edit_account(dbcon):
     """Change account name or classification based on account number.
-    dbcur = db connection cursor
-    dbcon = db connection
+    String dbcon = db filename
     """
     valid_account = ""
+    db = DBManagerDatetime(dbcon)
 
     acct_input = raw_input("Enter account number: ")
 
-    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (acct_input,))
-    to_edit = dbcur.fetchone()
+    db.query("SELECT * FROM chartofaccounts WHERE num=?", (acct_input,))
+    to_edit = db.fetchone()
 
     if to_edit:
         print(to_edit[0]+" "+to_edit[1])
@@ -91,8 +95,7 @@ def edit_account(dbcur, dbcon):
             if ask_name == 'Y' or ask_name == 'y':
                 new_name = raw_input("Enter new name: ")
 
-                dbcur.execute("UPDATE chartofaccounts SET description=? WHERE num=?", (new_name,acct_input))
-                dbcon.commit()
+                db.query("UPDATE chartofaccounts SET description=? WHERE num=?", (new_name,acct_input))
                 edited = True
 
             ask_class = raw_input("Change account classification? (Y/N/eXit) ")
@@ -105,8 +108,7 @@ def edit_account(dbcur, dbcon):
                     print "Enter account classification (A/L/OE/R/E)"
                     acct_classification = raw_input("Classification: ")
                 acct_classification = account_classification_list[acct_classification]
-                dbcur.execute("UPDATE chartofaccounts SET classification=? WHERE num=?", (acct_classification,acct_input))
-                dbcon.commit()
+                db.query("UPDATE chartofaccounts SET classification=? WHERE num=?", (acct_classification,acct_input))
                 edited = True
 
             if ask_class == 'X':
@@ -114,14 +116,16 @@ def edit_account(dbcur, dbcon):
     else:
         print("Invalid account number.")
 
-def view_chart(dbcur):
+def view_chart(dbcon):
     """prints all entries in chartofaccounts db
     probably should update this to return rather than straight print
     """
+    db = DBManagerDatetime(dbcon)
+
     print ""
 
-    dbcur.execute("SELECT * FROM chartofaccounts ORDER BY num")
-    all_chart = dbcur.fetchall()
+    db.query("SELECT * FROM chartofaccounts ORDER BY num")
+    all_chart = db.fetchall()
 
     if all_chart:
         for acct in all_chart:
@@ -129,18 +133,18 @@ def view_chart(dbcur):
     else:
         print("No TB accounts.")
 
-def delete_account(dbcur, dbcon):
+def delete_account(dbcon):
     """Remove account from Chart of Accounts.
-    dbcur = db connection cursor
-    dbcon = db connection
+    String dbcon = db filename
     """
+    db = DBManagerDatetime(dbcon)
     to_delete = ""
 
     print("")
     delete_num = raw_input("Enter account number: ")
 
-    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (delete_num,))
-    to_delete = dbcur.fetchone()
+    db.query("SELECT * FROM chartofaccounts WHERE num=?", (delete_num,))
+    to_delete = db.fetchone()
 
     if to_delete:
         print("Are you sure you want to delete the following account?")
@@ -148,22 +152,21 @@ def delete_account(dbcur, dbcon):
 
         affirm = raw_input("Delete? (Y/N) ")
         if affirm == 'Y' or affirm == 'y':
-            dbcur.execute("DELETE FROM chartofaccounts WHERE num=?", (delete_num,))
-            dbcon.commit()
+            db.query("DELETE FROM chartofaccounts WHERE num=?", (delete_num,))
     else:
         print("Invalid account number.")
 
-def initiate_chart_db(dbcur):
+def initiate_chart_db(dbcon):
     """Creates table in DB for the chart of accounts.
-    dbcur = db connection cursor
+    dbcon = db filename
     """
+    db = DBManagerDatetime(dbcon)
 
     confirm = raw_input("Please enter admin password: ")
 
     if confirm == "saltedpork":
-        dbcur.execute('''CREATE TABLE chartofaccounts
+        db.query('''CREATE TABLE chartofaccounts
                         (num text, description text, classification text)''')
-        #why isn't a db commit required here?
         print("Chart of accounts initiated.")
 
     else:
@@ -173,8 +176,6 @@ def chart_module(dbcon):
     """Menu loop for the Chart of Accounts module.
     dbcon = db connection from sqlite3"""
     chart_running = True
-
-    dbcur = dbcon.cursor()
 
     while chart_running:
         print ""
@@ -194,16 +195,16 @@ def chart_module(dbcon):
             chart_running = False
 
         elif user_input == "1":
-            create_account(dbcur, dbcon)
+            create_account(dbcon)
 
         elif user_input == "2":
-            edit_account(dbcur, dbcon)
+            edit_account(dbcon)
 
         elif user_input == "3":
-            view_chart(dbcur)
+            view_chart(dbcon)
 
         elif user_input == "4":
-            delete_account(dbcur, dbcon)
+            delete_account(dbcon)
 
         elif user_input == "5":
-            initiate_chart_db(dbcur)
+            initiate_chart_db(dbcon)

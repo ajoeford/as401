@@ -6,12 +6,19 @@ import pickle
 from classes import *
 from datetime import datetime
 
-def get_acct_description(acct_num, dbcur):
-    #get account description
-    dbcur.execute("SELECT description FROM chartofaccounts WHERE num=?", (acct_num,))
-    return dbcur.fetchone()[0]
+def get_acct_description(acct_num, dbcon):
+    """
+    get account description
+    Parameters: String acct_num, String dbcon
+    returns: account description of first account found in db
+    """
 
-def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value, dbcur):
+    db = DBManagerDatetime(dbcon)
+
+    db.query("SELECT description FROM chartofaccounts WHERE num=?", (acct_num,))
+    return db.fetchone()[0]
+
+def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value, dbcon):
     """Loop for JE lines"""
     """parameters:
     List aje_lines_list
@@ -23,13 +30,15 @@ def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value
     returns: A tuple of updated aje_lines_list and aje_lines
     """
 
+    db = DBManagerDatetime(dbcon)
+
     looped = True
     while looped:
         print("")
         for line in aje_lines_list:
-            print("* " + line.print_line(dbcur))
+            print("* " + line.print_line(dbcon))
         print(str(aje_lines) + " " + input_sign + " " + input_acct +
-            " "+ get_acct_description(input_acct,dbcur) +" " + input_value)
+            " "+ get_acct_description(input_acct,dbcon) +" " + input_value)
 
         input_confirm = raw_input("Is this line correct?(Y/N): ")
 
@@ -66,10 +75,10 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
     If not canceled, adds JE to je_list and gl lists
     """
     global je_list
-    global gl
+
     aje_lines_loop = True
 
-    dbcur = dbcon.cursor()
+    db = DBManagerDatetime(dbcon)
 
     final_loop = True
     while final_loop:
@@ -79,9 +88,8 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
             new_je = JournalEntry(aje_count, input_description, aje_lines_list)
             if new_je.is_balanced():
                 for entry in new_je.get_pieces():
-                    dbcur.execute("INSERT INTO gl VALUES (?,?,?,?,?,?)",
+                    db.query("INSERT INTO gl VALUES (?,?,?,?,?,?)",
                     (datetime.now(), entry.get_acct(), entry.get_value(), entry.is_debit(), aje_count, input_description))
-                    dbcon.commit()
 
                 print "JE entered."
                 aje_count += 1
@@ -104,23 +112,23 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
 
     return (aje_count, aje_lines_loop)
 
-def account_exists(acct_num, dbcur):
+def account_exists(acct_num, dbcon):
     """Test to see if account already exists
         returns boolean"""
+    db = DBManagerDatetime(dbcon)
 
-    dbcur.execute("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
-    if dbcur.fetchone():
+    db.query("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
+    if db.fetchone():
         return True
     else:
         return False
 
 def create_aje(dbcon):
     """Make an AJE"""
-    global gl
     global aje_count
     global je_list
 
-    dbcur = dbcon.cursor()
+    db = DBManagerDatetime(dbcon)
 
     read_pkl = open('gldata.pkl', 'rb')
     aje_count = pickle.load(read_pkl)
@@ -146,11 +154,10 @@ def create_aje(dbcon):
                 break
 
             #test if account exists in TB
-            if account_exists(input_acct, dbcur):
+            if account_exists(input_acct, dbcon):
                 valid_account = True
             else:
                 print("TB Account does not exist.")
-
 
         input_value = raw_input("Enter amount: ")
 
@@ -166,7 +173,7 @@ def create_aje(dbcon):
 
         #confirmation of JE line
         updated_ajes = je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value,
-                                    dbcur)
+                                    dbcon)
         aje_lines_list = updated_ajes[0]
         aje_lines = updated_ajes[1]
 
@@ -180,8 +187,10 @@ def create_aje(dbcon):
         pickle.dump(aje_count, pkl_cursor)
         pkl_cursor.close()
 
-def print_piece(piece, dbcur):
+def print_piece(piece, dbcon):
     '''Execute print of JE piece'''
+
+    db = DBManagerDatetime(dbcon)
 
     #change boolean sign to Dr or Cr
     if piece[2]:
@@ -190,32 +199,30 @@ def print_piece(piece, dbcur):
         sign = 'Cr'
 
     #get account description
-    dbcur.execute("SELECT description FROM chartofaccounts WHERE num=?", (piece[0],))
-    acct_description = dbcur.fetchone()[0]
+    db.query("SELECT description FROM chartofaccounts WHERE num=?", (piece[1],))
+    acct_description = db.fetchone()[0]
 
-    print(sign +" "+piece[0]+" "+acct_description+" "+str(piece[1]))
+    return str(piece[0])+" "+sign +" "+piece[1]+" "+acct_description+" "+str(piece[2])
 
 def view_je(dbcon):
     """
     Prints JE's based on JE number
     """
 
-    dbcur = dbcon.cursor()
+    db = DBManagerDatetime(dbcon)
 
     je_query = int(raw_input("Lookup JE by #: "))
 
-    dbcur.execute("SELECT * FROM gl WHERE je_number=?",(je_query,))
-    je_pieces = dbcur.fetchall()
+    db.query("SELECT * FROM gl WHERE je_number=?",(je_query,))
+    je_pieces = db.fetchall()
 
     if je_pieces:
         print("")
         print("JE "+str(je_pieces[0][4])+": " + je_pieces[0][5])
         for piece in je_pieces:
-            print_piece(piece, dbcur)
+            print(print_piece(piece, dbcon))
     else:
         print("JE# not found.")
-
-    dbcur.close()
 
 def initiate_gl(dbcon):
 
@@ -223,9 +230,9 @@ def initiate_gl(dbcon):
 
     if confirm == "saltedpork":
 
-        dbcur = dbcon.cursor()
+        db = DBManagerDatetime(dbcon)
 
-        dbcur.execute('''CREATE TABLE GL
+        db.query('''CREATE TABLE GL
                         (entry_date timestamp, account text, value integer, debcred text, je_number integer, description text)''')
 
         #start aje counter
