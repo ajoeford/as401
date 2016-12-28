@@ -5,18 +5,7 @@ from decimal import *
 import pickle
 from classes import *
 from datetime import datetime
-
-def get_acct_description(acct_num, dbcon):
-    """
-    get account description
-    Parameters: String acct_num, String dbcon
-    returns: account description of first account found in db
-    """
-
-    db = DBManagerDatetime(dbcon)
-
-    db.query("SELECT description FROM chartofaccounts WHERE num=?", (acct_num,))
-    return db.fetchone()[0]
+from utility import *
 
 def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value, dbcon):
     """Loop for JE lines"""
@@ -202,7 +191,7 @@ def print_piece(piece, dbcon):
     db.query("SELECT description FROM chartofaccounts WHERE num=?", (piece[1],))
     acct_description = db.fetchone()[0]
 
-    return str(piece[0])+" "+sign +" "+piece[1]+" "+acct_description+" "+str(piece[2])
+    return str(piece[0].date())+" "+sign +" "+piece[1]+" "+acct_description+" "+decify(piece[2])
 
 def view_je(dbcon):
     """
@@ -233,7 +222,7 @@ def initiate_gl(dbcon):
         db = DBManagerDatetime(dbcon)
 
         db.query('''CREATE TABLE GL
-                        (entry_date timestamp, account text, value integer, debcred text, je_number integer, description text)''')
+                        (entry_date timestamp, account text, value integer, debcred integer, je_number integer, description text)''')
 
         #start aje counter
         aje_count = 1

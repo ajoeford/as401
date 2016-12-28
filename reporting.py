@@ -4,39 +4,49 @@
 import ajemodule
 import pickle
 from classes import *
-from ajemodule import get_acct_description
+from utility import *
 
 
-def account_balance(acct_num):
+def account_balance(acct_num, dbcon):
     """
     Summary: Takes TB account number, returns TB account balance
     Parameters: String acct_num
     returns: Int balance
     """
+    db = DBManagerDatetime(dbcon)
 
-    #test if account exists now or in prompt function?
+    db.query("SELECT * FROM gl WHERE account=?",(acct_num,))
+    je_pieces = db.fetchall()
+
+    total = 0
+    for piece in je_pieces:
+        #tests debit/credit and makes credits negative for total
+        if piece[4] == False:
+            total -= int(piece[3])
+        else:
+            total += int(piece[3])
+
+    return total
 
 def view_balance_prompt(dbcon):
     """
     Prints TB account, description, and balance
     """
 
-    dbcur = dbcon.cursor()
+    account_query = int(raw_input("Enter Account #: "))
 
-    je_query = int(raw_input("Lookup JE by #: "))
+    #get account description
+    acct_description = get_acct_description(account_query,dbcon)
 
-    dbcur.execute("SELECT * FROM gl WHERE je_number=?",(je_query,))
-    je_pieces = dbcur.fetchall()
+    #account exists break
+    if not acct_description:
+        print("TB account not found.")
 
-    if je_pieces:
-        print("")
-        print("JE "+str(je_pieces[0][3])+": " + je_pieces[0][4])
-        for piece in je_pieces:
-            print_piece(piece, dbcur)
     else:
-        print("JE# not found.")
+        #get account total
+        acct_balance = account_balance(account_query,dbcon)
 
-    dbcur.close()
+        print(str(account_query)+" "+acct_description+" "+decify(acct_balance))
 
 def reporting_module(dbcon):
     running = True
@@ -54,7 +64,7 @@ def reporting_module(dbcon):
             running = False
 
         elif user_input == "1":
-            pass
+            view_balance_prompt(dbcon)
 
         elif user_input == "2":
             pass
