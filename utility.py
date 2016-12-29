@@ -1,4 +1,4 @@
-from classes import *
+import classes
 
 def decify(num):
     '''
@@ -27,8 +27,8 @@ def get_acct_description(acct_num, dbcon):
     Parameters: String acct_num, String dbcon
     returns: String account description of first account found in db
     """
-
-    db = DBManagerDatetime(dbcon)
+    
+    db = classes.DBManagerDatetime(dbcon)
 
     db.query("SELECT description FROM chartofaccounts WHERE num=?", (acct_num,))
     return db.fetchone()[0]

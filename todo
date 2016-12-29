@@ -1,8 +1,11 @@
 reporting module:
   print account balance
 
+ajemodule:
+  need to fix aje confirmation print outs
+
 program wide:
   put in try clauses for sql entries
   move account_exists to utility
-  1) the JEs are printing as only debits
+  1) convert all values to Decimal objects -- clean up Decimal vs int problem
   2) print tb balance is not printing correct value

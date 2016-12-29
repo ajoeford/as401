@@ -15,6 +15,7 @@ def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value
     String input_sign
     String input_acct
     Int input_value
+    String dbcon
 
     returns: A tuple of updated aje_lines_list and aje_lines
     """
@@ -27,7 +28,7 @@ def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value
         for line in aje_lines_list:
             print("* " + line.print_line(dbcon))
         print(str(aje_lines) + " " + input_sign + " " + input_acct +
-            " "+ get_acct_description(input_acct,dbcon) +" " + input_value)
+            " "+ get_acct_description(input_acct,dbcon) +" " + decify(int(input_value)))
 
         input_confirm = raw_input("Is this line correct?(Y/N): ")
 
@@ -149,6 +150,7 @@ def create_aje(dbcon):
                 print("TB Account does not exist.")
 
         input_value = raw_input("Enter amount: ")
+        input_value = Decimal(input_value)
 
         debit_loop = True
         while debit_loop:
@@ -182,7 +184,7 @@ def print_piece(piece, dbcon):
     db = DBManagerDatetime(dbcon)
 
     #change boolean sign to Dr or Cr
-    if piece[2]:
+    if piece[3]:
         sign = 'Dr'
     else:
         sign = 'Cr'
@@ -222,7 +224,7 @@ def initiate_gl(dbcon):
         db = DBManagerDatetime(dbcon)
 
         db.query('''CREATE TABLE GL
-                        (entry_date timestamp, account text, value integer, debcred integer, je_number integer, description text)''')
+                        (entry_date timestamp, account text, value text, debcred integer, je_number integer, description text)''')
 
         #start aje counter
         aje_count = 1

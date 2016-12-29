@@ -4,6 +4,7 @@
 
 from decimal import *
 import sqlite3
+import utility
 
 class DatabaseManager(object):
     '''Class to handle sqlite3 connection'''
@@ -32,6 +33,15 @@ class DBManagerDatetime(DatabaseManager):
     def __init__(self, db):
         self.conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
         self.cur = self.conn.cursor()
+
+        sqlite3.register_adapter(Decimal, self.adapt_decimal)
+        sqlite3.register_converter("decimal", self.convert_decimal)
+
+    def adapt_decimal(self, dec_in):
+        return str(dec_in)
+
+    def convert_decimal(self, dec_out):
+        return Decimal(dec_out)
 
 class TBAccount(object):
     """Class for individual TB Accounts
@@ -77,7 +87,7 @@ class JournalPiece(object):
         return self.acct
 
     def get_value(self):
-        return int(self.value*100)
+        return int(self.value)
 
     def is_debit(self):
         return self.debit
@@ -85,16 +95,14 @@ class JournalPiece(object):
     def get_je_num(self):
         return self.je_num
 
-    def print_line(self, dbcur):
+    def print_line(self, dbcon):
         #Print line with account description pulled from DB
-        value_str = str(self.value)
-        dbcur.execute("SELECT description FROM chartofaccounts WHERE num=?", (self.acct,))
-        self.acct_description = dbcur.fetchone()[0]
+        self.acct_description = utility.get_acct_description(self.acct, dbcon)
 
         if self.debit == True:
-            return "Dr " + self.acct +" "+ self.acct_description+" " + str(self.value)
+            return "Dr " + self.acct +" "+ self.acct_description+" " + utility.decify(self.value)
         else:
-            return "Cr " + self.acct +" "+ self.acct_description+" " + str(self.value)
+            return "Cr " + self.acct +" "+ self.acct_description+" " + utility.decify(self.value)
 
     def __repr__(self):
 
