@@ -31,11 +31,12 @@ class DBManagerDatetime(DatabaseManager):
     """Class to handle sqlite3 connection with datetime parsing"""
 
     def __init__(self, db):
-        self.conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
-        self.cur = self.conn.cursor()
 
         sqlite3.register_adapter(Decimal, self.adapt_decimal)
         sqlite3.register_converter("decimal", self.convert_decimal)
+
+        self.conn = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
+        self.cur = self.conn.cursor()
 
     def adapt_decimal(self, dec_in):
         return str(dec_in)
@@ -73,13 +74,13 @@ class TBAccount(object):
 class JournalPiece(object):
     """Class for a debit or credit in a J/E
     TBAccount acct = account object
-    Integer value = entry value
+    Decimal value = entry value
     Boolean debit = true if debit, false if credit"""
 
     def __init__(self, acct, value, debit, je_num):
         super(JournalPiece, self).__init__()
         self.acct = acct
-        self.value = Decimal(value) #crashes if input is not a number
+        self.value = value #crashes if input is not a number
         self.debit = debit
         self.je_num = je_num
 
@@ -87,7 +88,7 @@ class JournalPiece(object):
         return self.acct
 
     def get_value(self):
-        return int(self.value)
+        return self.value
 
     def is_debit(self):
         return self.debit
@@ -100,9 +101,9 @@ class JournalPiece(object):
         self.acct_description = utility.get_acct_description(self.acct, dbcon)
 
         if self.debit == True:
-            return "Dr " + self.acct +" "+ self.acct_description+" " + utility.decify(self.value)
+            return "Dr " + self.acct +" "+ self.acct_description+" " + str(self.value)
         else:
-            return "Cr " + self.acct +" "+ self.acct_description+" " + utility.decify(self.value)
+            return "Cr " + self.acct +" "+ self.acct_description+" " + str(self.value)
 
     def __repr__(self):
 

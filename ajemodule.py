@@ -14,7 +14,7 @@ def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value
     Int aje_lines
     String input_sign
     String input_acct
-    Int input_value
+    Decimal input_value
     String dbcon
 
     returns: A tuple of updated aje_lines_list and aje_lines
@@ -28,7 +28,7 @@ def je_piece_loop(aje_lines_list, aje_lines, input_sign, input_acct, input_value
         for line in aje_lines_list:
             print("* " + line.print_line(dbcon))
         print(str(aje_lines) + " " + input_sign + " " + input_acct +
-            " "+ get_acct_description(input_acct,dbcon) +" " + decify(int(input_value)))
+            " "+ get_acct_description(input_acct,dbcon) +" " + decify(input_value))
 
         input_confirm = raw_input("Is this line correct?(Y/N): ")
 
@@ -179,7 +179,10 @@ def create_aje(dbcon):
         pkl_cursor.close()
 
 def print_piece(piece, dbcon):
-    '''Execute print of JE piece'''
+    '''Execute print of JE piece
+    JournalPiece piece
+    String dbcon
+    returns String'''
 
     db = DBManagerDatetime(dbcon)
 
@@ -224,7 +227,7 @@ def initiate_gl(dbcon):
         db = DBManagerDatetime(dbcon)
 
         db.query('''CREATE TABLE GL
-                        (entry_date timestamp, account text, value text, debcred integer, je_number integer, description text)''')
+                        (entry_date timestamp, account text, value decimal, debcred integer, je_number integer, description text)''')
 
         #start aje counter
         aje_count = 1

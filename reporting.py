@@ -11,20 +11,20 @@ def account_balance(acct_num, dbcon):
     """
     Summary: Takes TB account number, returns TB account balance
     Parameters: String acct_num
-    returns: Int balance
+    returns: Decimal balance
     """
     db = DBManagerDatetime(dbcon)
 
     db.query("SELECT * FROM gl WHERE account=?",(acct_num,))
     je_pieces = db.fetchall()
 
-    total = 0
+    total = Decimal(0)
     for piece in je_pieces:
         #tests debit/credit and makes credits negative for total
         if piece[4] == False:
-            total -= int(piece[3])
+            total -= piece[3]
         else:
-            total += int(piece[3])
+            total += piece[3]
 
     return total
 
