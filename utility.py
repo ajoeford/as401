@@ -14,13 +14,13 @@ def decify(num):
         outs = outs + ".00"
 
     #add commas
-    if num > 999:
+    if num > 999 or num < -999:
         outs = outs[0:-6]+','+outs[-6:]
-    if num > 999999:
+    if num > 999999 or num < -999999:
         outs = outs[0:-10]+','+outs[-10:]
-    if num > 999999999:
+    if num > 999999999 or num < -999999999:
         outs = outs[0:-14]+','+outs[-14:]
-    if num > 999999999999:
+    if num > 999999999999 or num < -999999999999:
         outs = outs[0:-18]+','+outs[-18:]
 
     return outs

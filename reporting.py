@@ -7,7 +7,7 @@ from classes import *
 from utility import *
 
 
-def account_balance(acct_num, dbcon):
+def get_account_balance(acct_num, dbcon):
     """
     Summary: Takes TB account number, returns TB account balance
     Parameters: String acct_num
@@ -21,10 +21,10 @@ def account_balance(acct_num, dbcon):
     total = Decimal(0)
     for piece in je_pieces:
         #tests debit/credit and makes credits negative for total
-        if piece[4] == False:
-            total -= piece[3]
+        if not piece[3]:
+            total -= piece[2]
         else:
-            total += piece[3]
+            total += piece[2]
 
     return total
 
@@ -44,7 +44,7 @@ def view_balance_prompt(dbcon):
 
     else:
         #get account total
-        acct_balance = account_balance(account_query,dbcon)
+        acct_balance = get_account_balance(account_query,dbcon)
 
         print(str(account_query)+" "+acct_description+" "+decify(acct_balance))
 
