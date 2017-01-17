@@ -97,7 +97,7 @@ class JournalPiece(object):
         return self.je_num
 
     def print_line(self, dbcon):
-        #Print line with account description pulled from DB
+        #Return line with account description pulled from DB
         self.acct_description = utility.get_acct_description(self.acct, dbcon)
 
         if self.debit == True:

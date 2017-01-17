@@ -90,7 +90,7 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
                 print "JE not in balance."
 
                 for entry in new_je.get_pieces():
-                    print "*" + str(entry)
+                    print "*" + entry.print_line(dbcon)
                 final_loop = False
 
         elif input_final == 'N' or input_final == 'n':
@@ -101,17 +101,6 @@ def confirm_je_loop(aje_count, input_description, aje_lines_list, dbcon):
             aje_lines_loop = False
 
     return (aje_count, aje_lines_loop)
-
-def account_exists(acct_num, dbcon):
-    """Test to see if account already exists
-        returns boolean"""
-    db = DBManagerDatetime(dbcon)
-
-    db.query("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
-    if db.fetchone():
-        return True
-    else:
-        return False
 
 def create_aje(dbcon):
     """Make an AJE"""

@@ -1,6 +1,17 @@
 import classes
 from decimal import Decimal
 
+def account_exists(acct_num, dbcon):
+    """Test to see if account exists
+        returns boolean"""
+    db = classes.DBManagerDatetime(dbcon)
+
+    db.query("SELECT * FROM chartofaccounts WHERE num=?", (acct_num,))
+    if db.fetchone():
+        return True
+    else:
+        return False
+
 def decify(num):
     '''
     Takes Decimal, adds commas and decimal point and returns as String

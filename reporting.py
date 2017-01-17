@@ -6,6 +6,18 @@ import pickle
 from classes import *
 from utility import *
 
+def get_account_gl(acct_num, dbcon):
+    """
+    Takes TB account number and returns that account's GL detail
+    Parameters: String acct_num
+    returns: list of GL lines
+    """
+    db = DBManagerDatetime(dbcon)
+
+    db.query("SELECT * FROM gl WHERE account=?",(acct_num,))
+    gl_pieces = db.fetchall()
+
+    return gl_pieces
 
 def get_account_balance(acct_num, dbcon):
     """
@@ -28,6 +40,21 @@ def get_account_balance(acct_num, dbcon):
 
     return total
 
+def view_account_gl_prompt(dbcon):
+    """
+    Asks for account, prints GL detail of account
+    """
+    account_query = int(raw_input("Enter Account #: "))
+
+    if account_exists(account_query, dbcon):
+        gl_lines = get_account_gl(account_query, dbcon)
+
+        for line in gl_lines:
+            print(ajemodule.print_piece(line, dbcon))
+
+    else:
+        print("TB account not found.")
+
 def view_balance_prompt(dbcon):
     """
     Prints TB account, description, and balance
@@ -35,18 +62,17 @@ def view_balance_prompt(dbcon):
 
     account_query = int(raw_input("Enter Account #: "))
 
-    #get account description
-    acct_description = get_acct_description(account_query,dbcon)
+    if account_exists(account_query, dbcon):
+        #get account description
+        acct_description = get_acct_description(account_query,dbcon)
 
-    #account exists break
-    if not acct_description:
-        print("TB account not found.")
-
-    else:
         #get account total
         acct_balance = get_account_balance(account_query,dbcon)
 
         print(str(account_query)+" "+acct_description+" "+decify(acct_balance))
+
+    else:
+        print("TB account not found.")
 
 def reporting_module(dbcon):
     running = True
@@ -67,7 +93,7 @@ def reporting_module(dbcon):
             view_balance_prompt(dbcon)
 
         elif user_input == "2":
-            pass
+            view_account_gl_prompt(dbcon)
 
         elif user_input == "8":
             pass
