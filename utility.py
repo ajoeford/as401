@@ -1,5 +1,6 @@
 import classes
 from decimal import Decimal
+import datetime
 
 def account_exists(acct_num, dbcon):
     """Test to see if account exists
@@ -47,3 +48,17 @@ def get_acct_description(acct_num, dbcon):
 
     db.query("SELECT description FROM chartofaccounts WHERE num=?", (acct_num,))
     return db.fetchone()[0]
+
+def convert_string_date(string_date):
+    """
+    Parameters: String string_date as (MM/DD/YYYY)
+    returns: Datetime date
+    """
+
+    month = int(string_date[0:2])
+    day = int(string_date[3:5])
+    year = int(string_date[-4:])
+
+    date_formatted = datetime.date(year, month, day)
+
+    return date_formatted
