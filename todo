@@ -1,7 +1,6 @@
 reporting module:
   print account Detail
     add begin and end balance
-    add date qualifiers
   print TB
 
 program wide:
