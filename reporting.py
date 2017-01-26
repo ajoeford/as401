@@ -178,6 +178,55 @@ def view_balance_date_prompt(dbcon):
     else:
         print("TB account not found.")
 
+def get_accounts_chart(dbcon):
+    """
+    returns list of chart of accounts
+    """
+
+    db = DBManagerDatetime(dbcon)
+
+    db.query("SELECT * FROM chartofaccounts ORDER BY num")
+    all_chart = db.fetchall()
+
+    return all_chart
+
+def get_tb_dated(date_formatted, dbcon):
+    """
+    Compiles TB into a list
+    Parameters: Datetime.date date_formatted, String dbcon
+    returns: List tb_list
+    """
+
+    #get chart of accounts
+    chart_of_accounts = get_accounts_chart(dbcon)
+
+    tb_list = []
+    for account in chart_of_accounts:
+        #get account balance as of date
+        acct_balance = get_account_balance_dated(date_formatted,account[0],dbcon)
+
+        #add to list
+        tb_list.append((account[0],account[1],acct_balance))
+
+    return tb_list
+
+def view_tb(dbcon):
+    """
+    Prompt for date and print tb
+    """
+
+    date_query = raw_input("Enter date (MM/DD/YYYY): ")
+
+    try:
+        date_formatted = convert_string_date(date_query)
+
+        tb_list = get_tb_dated(date_formatted, dbcon)
+
+        for account in tb_list:
+            print(account[0]+" "+account[1]+" "+decify(account[2]))
+
+    except ValueError:
+        print("Improper date format.")
 
 def reporting_module(dbcon):
     running = True
@@ -207,6 +256,9 @@ def reporting_module(dbcon):
 
         elif user_input == "4":
             view_gl_by_date_prompt(dbcon)
+
+        elif user_input == "6":
+            view_tb(dbcon)
 
         elif user_input == "8":
             pass
